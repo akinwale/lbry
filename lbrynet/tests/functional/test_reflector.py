@@ -66,7 +66,7 @@ class TestReflector(unittest.TestCase):
             rate_limiter=rate_limiter,
             wallet=wallet,
             blob_tracker_class=mocks.BlobAvailabilityTracker,
-            dht_node_class=Node
+            external_ip="127.0.0.1"
         )
 
         self.stream_info_manager = EncryptedFileMetadataManager.DBEncryptedFileMetadataManager(

@@ -77,7 +77,7 @@ class TestStreamify(TestCase):
             blob_dir=blob_dir, peer_port=5553,
             use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
             blob_tracker_class=DummyBlobAvailabilityTracker,
-            is_generous=self.is_generous
+            is_generous=self.is_generous, external_ip="127.0.0.1"
         )
 
         self.stream_info_manager = TempEncryptedFileMetadataManager()
@@ -132,7 +132,7 @@ class TestStreamify(TestCase):
             peer_finder=peer_finder, hash_announcer=hash_announcer,
             blob_dir=blob_dir, peer_port=5553,
             use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
-            blob_tracker_class=DummyBlobAvailabilityTracker
+            blob_tracker_class=DummyBlobAvailabilityTracker, external_ip="127.0.0.1"
         )
 
         self.stream_info_manager = DBEncryptedFileMetadataManager(self.session.db_dir)
