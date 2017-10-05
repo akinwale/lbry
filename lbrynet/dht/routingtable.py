@@ -317,10 +317,7 @@ class OptimizedTreeRoutingTable(TreeRoutingTable):
                     self._replacementCache[bucketIndex] = []
                 if contact in self._replacementCache[bucketIndex]:
                     self._replacementCache[bucketIndex].remove(contact)
-                # TODO: Using k to limit the size of the contact
-                # replacement cache - maybe define a separate value for
-                # this in constants.py?
-                elif len(self._replacementCache[bucketIndex]) >= constants.k:
+                elif len(self._replacementCache[bucketIndex]) >= constants.replacementCacheSize:
                     self._replacementCache[bucketIndex].pop(0)
                 self._replacementCache[bucketIndex].append(contact)
 
