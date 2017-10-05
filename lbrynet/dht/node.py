@@ -437,14 +437,6 @@ class Node(object):
         return 'pong'
 
     @rpcmethod
-    def echo(self, value, **kwargs):
-        """ Used to verify contact between two Kademlia nodes
-
-        @rtype: str
-        """
-        return value
-
-    @rpcmethod
     def store(self, key, value, originalPublisherID=None, self_store=False, **kwargs):
         """ Store the received data in this node's local hash table
 

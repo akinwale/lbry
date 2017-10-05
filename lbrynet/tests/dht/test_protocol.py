@@ -147,15 +147,15 @@ class KademliaProtocolTest(unittest.TestCase):
             self.error = 'An RPC error occurred: %s' % f.getErrorMessage()
 
         def handleResult(result):
-            expectedResult = 'This should be returned.'
-            if result != 'This should be returned.':
+            expectedResult = 'pong'
+            if result != expectedResult:
                 self.error = 'Result from RPC is incorrect; expected "%s", got "%s"' % \
                              (expectedResult, result)
 
         # Publish the "local" node on the network
         lbrynet.dht.protocol.reactor.listenUDP(9182, self.protocol)
         # Simulate the RPC
-        df = remoteContact.echo('This should be returned.')
+        df = remoteContact.ping()
         df.addCallback(handleResult)
         df.addErrback(handleError)
         df.addBoth(lambda _: lbrynet.dht.protocol.reactor.stop())
