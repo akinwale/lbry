@@ -49,7 +49,7 @@ class Node(object):
     application is performed via this class (or a subclass).
     """
 
-    def __init__(self, lbryid=None, udpPort=4000, dataStore=None,
+    def __init__(self, node_id=None, udpPort=4000, dataStore=None,
                  routingTableClass=None, networkProtocol=None,
                  externalIP=None):
         """
@@ -74,7 +74,7 @@ class Node(object):
                                 being transmitted.
         @type networkProtocol: entangled.kademlia.protocol.KademliaProtocol
         """
-        self.lbryid = lbryid or self._generateID()
+        self.node_id = node_id or self._generateID()
         self.port = udpPort
         self._listeningPort = None  # object implementing Twisted
         # IListeningPort This will contain a deferred created when
@@ -87,9 +87,9 @@ class Node(object):
         self.change_token_lc = task.LoopingCall(self.change_token)
         # Create k-buckets (for storing contacts)
         if routingTableClass is None:
-            self._routingTable = routingtable.OptimizedTreeRoutingTable(self.lbryid)
+            self._routingTable = routingtable.OptimizedTreeRoutingTable(self.node_id)
         else:
-            self._routingTable = routingTableClass(self.lbryid)
+            self._routingTable = routingTableClass(self.node_id)
 
         # Initialize this node's network access mechanisms
         if networkProtocol is None:
@@ -106,7 +106,7 @@ class Node(object):
             # Try to restore the node's state...
             if 'nodeState' in self._dataStore:
                 state = self._dataStore['nodeState']
-                self.lbryid = state['id']
+                self.node_id = state['id']
                 for contactTriple in state['closestNodes']:
                     contact = Contact(
                         contactTriple[0], contactTriple[1], contactTriple[2], self._protocol)
@@ -162,7 +162,7 @@ class Node(object):
         self.change_token_lc.start(constants.tokenSecretChangeInterval)
 
         # Initiate the Kademlia joining sequence - perform a search for this node's own ID
-        self._joinDeferred = self._iterativeFind(self.lbryid, bootstrapContacts)
+        self._joinDeferred = self._iterativeFind(self.node_id, bootstrapContacts)
         #        #TODO: Refresh all k-buckets further away than this node's closest neighbour
         # Start refreshing k-buckets periodically, if necessary
         self.next_refresh_call = reactor.callLater(constants.checkRefreshInterval,
@@ -182,7 +182,7 @@ class Node(object):
         # get the deepest bucket and the number of contacts in that bucket and multiply it
         # by the number of equivalently deep buckets in the whole DHT to get a really bad
         # estimate!
-        bucket = self._routingTable._buckets[self._routingTable._kbucketIndex(self.lbryid)]
+        bucket = self._routingTable._buckets[self._routingTable._kbucketIndex(self.node_id)]
         num_in_bucket = len(bucket._contacts)
         factor = (2 ** constants.key_bits) / (bucket.rangeMax - bucket.rangeMin)
         return num_in_bucket * factor
@@ -198,7 +198,7 @@ class Node(object):
         return num_in_data_store * self.getApproximateTotalDHTNodes() / 8
 
     def announceHaveBlob(self, key, port):
-        return self.iterativeAnnounceHaveBlob(key, {'port': port, 'lbryid': self.lbryid})
+        return self.iterativeAnnounceHaveBlob(key, {'port': port, 'lbryid': self.node_id})
 
     def getPeersForBlob(self, blob_hash):
         def expand_and_filter(result):
@@ -206,7 +206,7 @@ class Node(object):
             if isinstance(result, dict):
                 if blob_hash in result:
                     for peer in result[blob_hash]:
-                        if self.lbryid != peer[6:]:
+                        if self.node_id != peer[6:]:
                             host = ".".join([str(ord(d)) for d in peer[:4]])
                             if host == "127.0.0.1":
                                 if "from_peer" in result:
@@ -261,7 +261,7 @@ class Node(object):
             result = responseMsg.response
             if 'token' in result:
                 value['token'] = result['token']
-                d = n.store(blob_hash, value, self.lbryid, 0)
+                d = n.store(blob_hash, value, self.node_id, 0)
                 d.addCallback(log_success)
                 d.addErrback(log_error, n)
             else:
@@ -270,12 +270,12 @@ class Node(object):
 
         def requestPeers(contacts):
             if self.externalIP is not None and len(contacts) >= constants.k:
-                is_closer = Distance(blob_hash).is_closer(self.lbryid, contacts[-1].id)
+                is_closer = Distance(blob_hash).is_closer(self.node_id, contacts[-1].id)
                 if is_closer:
                     contacts.pop()
-                    self.store(blob_hash, value, self_store=True, originalPublisherID=self.lbryid)
+                    self.store(blob_hash, value, self_store=True, originalPublisherID=self.node_id)
             elif self.externalIP is not None:
-                self.store(blob_hash, value, self_store=True, originalPublisherID=self.lbryid)
+                self.store(blob_hash, value, self_store=True, originalPublisherID=self.node_id)
             ds = []
             for contact in contacts:
                 known_nodes[contact.id] = contact
@@ -467,7 +467,7 @@ class Node(object):
                 raise TypeError, 'No NodeID given. Therefore we can\'t store this node'
 
         if self_store is True and self.externalIP:
-            contact = Contact(self.lbryid, self.externalIP, self.port, None, None)
+            contact = Contact(self.node_id, self.externalIP, self.port, None, None)
             compact_ip = contact.compact_ip()
         elif '_rpcNodeContact' in kwargs:
             contact = kwargs['_rpcNodeContact']
@@ -594,7 +594,7 @@ class Node(object):
 
         if startupShortlist is None:
             shortlist = self._routingTable.findCloseNodes(key, constants.alpha)
-            if key != self.lbryid:
+            if key != self.node_id:
                 # Update the "last accessed" timestamp for the appropriate k-bucket
                 self._routingTable.touchKBucket(key)
             if len(shortlist) == 0:
@@ -690,7 +690,7 @@ class _IterativeFindHelper(object):
         responseMsg = responseTuple[0]
         originAddress = responseTuple[1]  # tuple: (ip adress, udp port)
         # Make sure the responding node is valid, and abort the operation if it isn't
-        if responseMsg.nodeID in self.active_contacts or responseMsg.nodeID == self.node.lbryid:
+        if responseMsg.nodeID in self.active_contacts or responseMsg.nodeID == self.node.node_id:
             return responseMsg.nodeID
 
         # Mark this node as active

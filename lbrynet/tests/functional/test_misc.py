@@ -115,7 +115,7 @@ class LbryUploader(object):
 
         self.session = Session(
             conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=self.db_dir, blob_dir=self.blob_dir,
-            lbryid="abcd", peer_finder=peer_finder, hash_announcer=hash_announcer,
+            node_id="abcd", peer_finder=peer_finder, hash_announcer=hash_announcer,
             peer_port=5553, use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
             blob_tracker_class=DummyBlobAvailabilityTracker,
             dht_node_class=Node, is_generous=self.is_generous)
@@ -218,7 +218,7 @@ def start_lbry_reuploader(sd_hash, kill_event, dead_event,
 
     db_dir, blob_dir = mk_db_and_blob_dir()
     session = Session(conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir,
-                      lbryid="abcd" + str(n),
+                      node_id="abcd" + str(n),
                       peer_finder=peer_finder, hash_announcer=hash_announcer,
                       blob_dir=blob_dir, peer_port=peer_port,
                       use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
@@ -330,7 +330,7 @@ def start_blob_uploader(blob_hash_queue, kill_event, dead_event, slow, is_genero
 
     db_dir, blob_dir = mk_db_and_blob_dir()
 
-    session = Session(conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir, lbryid="efgh",
+    session = Session(conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir, node_id="efgh",
                       peer_finder=peer_finder, hash_announcer=hash_announcer,
                       blob_dir=blob_dir, peer_port=peer_port,
                       use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
@@ -508,7 +508,7 @@ class TestTransfer(TestCase):
         db_dir, blob_dir = mk_db_and_blob_dir()
         self.session = Session(
             conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir,
-            lbryid="abcd", peer_finder=peer_finder, hash_announcer=hash_announcer,
+            node_id="abcd", peer_finder=peer_finder, hash_announcer=hash_announcer,
             blob_dir=blob_dir, peer_port=5553,
             use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
             blob_tracker_class=DummyBlobAvailabilityTracker,
@@ -599,7 +599,7 @@ class TestTransfer(TestCase):
 
         db_dir, blob_dir = mk_db_and_blob_dir()
         self.session = Session(
-            conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir, lbryid="abcd",
+            conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir, node_id="abcd",
             peer_finder=peer_finder, hash_announcer=hash_announcer,
             blob_dir=blob_dir, peer_port=5553,
             use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
@@ -678,7 +678,7 @@ class TestTransfer(TestCase):
 
         db_dir, blob_dir = mk_db_and_blob_dir()
         self.session = Session(conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir,
-                               lbryid="abcd", peer_finder=peer_finder,
+                               node_id="abcd", peer_finder=peer_finder,
                                hash_announcer=hash_announcer, blob_dir=blob_dir, peer_port=5553,
                                use_upnp=False, rate_limiter=rate_limiter, wallet=wallet,
                                blob_tracker_class=DummyBlobAvailabilityTracker,
@@ -800,7 +800,7 @@ class TestTransfer(TestCase):
 
         db_dir, blob_dir = mk_db_and_blob_dir()
         self.session = Session(conf.ADJUSTABLE_SETTINGS['data_rate'][1], db_dir=db_dir,
-                               lbryid="abcd", peer_finder=peer_finder,
+                               node_id="abcd", peer_finder=peer_finder,
                                hash_announcer=hash_announcer, blob_dir=blob_dir,
                                peer_port=5553, use_upnp=False, rate_limiter=rate_limiter,
                                wallet=wallet, blob_tracker_class=DummyBlobAvailabilityTracker,

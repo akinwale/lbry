@@ -57,7 +57,7 @@ class TestReflector(unittest.TestCase):
         self.session = Session.Session(
             conf.settings['data_rate'],
             db_dir=self.db_dir,
-            lbryid="abcd",
+            node_id="abcd",
             peer_finder=peer_finder,
             hash_announcer=hash_announcer,
             blob_dir=self.blob_dir,

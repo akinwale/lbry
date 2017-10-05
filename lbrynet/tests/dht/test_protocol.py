@@ -21,7 +21,7 @@ class FakeNode(object):
     test the Kademlia protocol's behaviour
     """
     def __init__(self, id):
-        self.lbryid = id
+        self.node_id = id
         self.contacts = []
         self.port = 9182
 
