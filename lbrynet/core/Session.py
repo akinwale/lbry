@@ -1,5 +1,6 @@
 import logging
 import miniupnpc
+from txrequests.sessions import Session as TXRequestsSession
 from lbrynet.core.BlobManager import DiskBlobManager
 from lbrynet.dht import node
 from lbrynet.core.PeerManager import PeerManager
@@ -241,6 +242,11 @@ class Session(object):
 
         def upnp_failed(err):
             log.warning("UPnP failed. Reason: %s", err.getErrorMessage())
+            with TXRequestsSession() as session:
+                r = session.get('https://api.ipify.org', format='json')
+                log.info("got external ip from ipify.org")
+                self.external_ip = r.json()['ip']
+                log.info("Set external ip: %s", self.external_ip)
             return False
 
         d = threads.deferToThread(threaded_try_upnp)
