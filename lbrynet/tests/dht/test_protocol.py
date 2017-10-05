@@ -1,87 +1,22 @@
-#!/usr/bin/env python
-#
-# This library is free software, distributed under the terms of
-# the GNU Lesser General Public License Version 3, or any later version.
-# See the COPYING file included in this archive
-
+import time
 import unittest
-
 import twisted.internet.selectreactor
 
 import lbrynet.dht.protocol
 import lbrynet.dht.contact
 import lbrynet.dht.constants
 import lbrynet.dht.msgtypes
-from lbrynet.dht.node import rpcmethod
-
-
-class FakeNode(object):
-    """
-    A fake node object implementing some RPC and non-RPC methods to
-    test the Kademlia protocol's behaviour
-    """
-    def __init__(self, id):
-        self.node_id = id
-        self.contacts = []
-        self.port = 9182
-
-    @rpcmethod
-    def ping(self, **kwargs):
-        return 'pong'
-
-    def pingNoRPC(self):
-        return 'pong'
-
-    @rpcmethod
-    def echo(self, value, **kwargs):
-        return value
-
-    def addContact(self, contact):
-        self.contacts.append(contact)
-
-    def removeContact(self, contact):
-        self.contacts.remove(contact)
-
-    def indirectPingContact(self, protocol, contact):
-        """ Pings the given contact (using the specified KademliaProtocol
-        object, not the direct Contact API), and removes the contact
-        on a timeout """
-        df = protocol.sendRPC(contact, 'ping', {})
-
-        def handleError(f):
-            if f.check(lbrynet.dht.protocol.TimeoutError):
-                self.removeContact(contact)
-                return f
-            else:
-                # This is some other error
-                return f
-
-        df.addErrback(handleError)
-        return df
-
-
-class ClientDatagramProtocol(lbrynet.dht.protocol.KademliaProtocol):
-    data = ''
-    msgID = ''
-    destination = ('127.0.0.1', 9182)
-
-    def __init__(self):
-        lbrynet.dht.protocol.KademliaProtocol.__init__(self, None)
-
-    def startProtocol(self):
-        self.sendDatagram()
-
-    def sendDatagram(self):
-        if len(self.data):
-            self._send(self.data, self.msgID, self.destination)
+from lbrynet.dht.error import TimeoutError
+from lbrynet.dht.node import Node, rpcmethod
 
 
 class KademliaProtocolTest(unittest.TestCase):
     """ Test case for the Protocol class """
+
     def setUp(self):
         del lbrynet.dht.protocol.reactor
         lbrynet.dht.protocol.reactor = twisted.internet.selectreactor.SelectReactor()
-        self.node = FakeNode('node1')
+        self.node = Node(node_id='node1', udpPort=9182, externalIP="127.0.0.1")
         self.protocol = lbrynet.dht.protocol.KademliaProtocol(self.node)
 
     def testReactor(self):
@@ -92,25 +27,49 @@ class KademliaProtocolTest(unittest.TestCase):
 
     def testRPCTimeout(self):
         """ Tests if a RPC message sent to a dead remote node times out correctly """
+
+        @rpcmethod
+        def fake_ping(*args, **kwargs):
+            time.sleep(lbrynet.dht.constants.rpcTimeout + 1)
+            return 'pong'
+
+        real_ping = self.node.ping
+        real_timeout = lbrynet.dht.constants.rpcTimeout
+        real_attempts = lbrynet.dht.constants.rpcAttempts
+        lbrynet.dht.constants.rpcAttempts = 1
+        lbrynet.dht.constants.rpcTimeout = 1
+        self.node.ping = fake_ping
         deadContact = lbrynet.dht.contact.Contact('node2', '127.0.0.1', 9182, self.protocol)
         self.node.addContact(deadContact)
         # Make sure the contact was added
         self.failIf(deadContact not in self.node.contacts,
                     'Contact not added to fake node (error in test code)')
-        # Set the timeout to 0 for testing
-        tempTimeout = lbrynet.dht.constants.rpcTimeout
-        lbrynet.dht.constants.rpcTimeout = 0
-        lbrynet.dht.protocol.reactor.listenUDP(0, self.protocol)
-        # Run the PING RPC (which should timeout)
-        df = self.node.indirectPingContact(self.protocol, deadContact)
+        lbrynet.dht.protocol.reactor.listenUDP(9182, self.protocol)
+
+        # Run the PING RPC (which should raise a timeout error)
+        df = self.protocol.sendRPC(deadContact, 'ping', {})
+
+        def check_timeout(err):
+            self.assertEqual(type(err), TimeoutError)
+
+        df.addErrback(check_timeout)
+
+        def reset_values():
+            self.node.ping = real_ping
+            lbrynet.dht.constants.rpcTimeout = real_timeout
+            lbrynet.dht.constants.rpcAttempts = real_attempts
+
+        # See if the contact was removed due to the timeout
+        def check_removed_contact():
+            self.failIf(deadContact in self.node.contacts,
+                        'Contact was not removed after RPC timeout; check exception types.')
+
+        df.addCallback(lambda _: reset_values())
+
         # Stop the reactor if a result arrives (timeout or not)
         df.addBoth(lambda _: lbrynet.dht.protocol.reactor.stop())
+        df.addCallback(lambda _: check_removed_contact())
         lbrynet.dht.protocol.reactor.run()
-        # See if the contact was removed due to the timeout
-        self.failIf(deadContact in self.node.contacts,
-                    'Contact was not removed after RPC timeout; check exception types.')
-        # Restore the global timeout
-        lbrynet.dht.constants.rpcTimeout = tempTimeout
 
     def testRPCRequest(self):
         """ Tests if a valid RPC request is executed and responded to correctly """
