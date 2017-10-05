@@ -182,8 +182,9 @@ class Node(object):
     def printContacts(self, *args):
         print '\n\nNODE CONTACTS\n==============='
         for i in range(len(self._routingTable._buckets)):
+            print "bucket %i" % i
             for contact in self._routingTable._buckets[i]._contacts:
-                print contact
+                print "    %s:%i" % (contact.address, contact.port)
         print '=================================='
 
     def getApproximateTotalDHTNodes(self):
