@@ -9,7 +9,6 @@ from lbrynet.core import PeerManager
 from lbrynet.core import RateLimiter
 from lbrynet.core import Session
 from lbrynet.core import StreamDescriptor
-from lbrynet.dht.node import Node
 from lbrynet.lbry_file import EncryptedFileMetadataManager
 from lbrynet.lbry_file.client import EncryptedFileOptions
 from lbrynet.file_manager import EncryptedFileCreator
@@ -17,6 +16,7 @@ from lbrynet.file_manager import EncryptedFileManager
 
 from lbrynet.tests import mocks
 from lbrynet.tests.util import mk_db_and_blob_dir, rm_db_and_blob_dir
+
 
 class TestReflector(unittest.TestCase):
     def setUp(self):
