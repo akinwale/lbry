@@ -1,18 +1,7 @@
-#!/usr/bin/env python
-#
-# This library is free software, distributed under the terms of
-# the GNU Lesser General Public License Version 3, or any later version.
-# See the COPYING file included in this archive
-#
-# The docstrings in this module contain epytext markup; API documentation
-# may be created by processing this file with epydoc: http://epydoc.sf.net
-
 import logging
-import binascii
 import time
 import socket
 import errno
-import exceptions
 
 from twisted.internet import protocol, defer, error, reactor, task
 
@@ -21,48 +10,10 @@ import encoding
 import msgtypes
 import msgformat
 from contact import Contact
+from error import REMOTE_EXCEPTIONS, UnknownRemoteException, TimeoutError
+from delay import Delay
 
 log = logging.getLogger(__name__)
-
-REMOTE_EXCEPTIONS = {
-    "exceptions.%s" % e: getattr(exceptions, e) for e in dir(exceptions) if not e.startswith("_")
-}
-
-
-class UnknownRemoteException(Exception):
-    pass
-
-
-class TimeoutError(Exception):
-    """ Raised when a RPC times out """
-
-    def __init__(self, remote_contact_id):
-        # remote_contact_id is a binary blob so we need to convert it
-        # into something more readable
-        msg = 'Timeout connecting to {}'.format(binascii.hexlify(remote_contact_id))
-        Exception.__init__(self, msg)
-        self.remote_contact_id = remote_contact_id
-
-
-class Delay(object):
-    maxToSendDelay = 10 ** -3  # 0.05
-    minToSendDelay = 10 ** -5  # 0.01
-
-    def __init__(self, start=0):
-        self._next = start
-
-    # TODO: explain why this logic is like it is. And add tests that
-    #       show that it actually does what it needs to do.
-    def __call__(self):
-        ts = time.time()
-        delay = 0
-        if ts >= self._next:
-            delay = self.minToSendDelay
-            self._next = ts + self.minToSendDelay
-        else:
-            delay = (self._next - ts) + self.maxToSendDelay
-            self._next += self.maxToSendDelay
-        return delay
 
 
 class KademliaProtocol(protocol.DatagramProtocol):
