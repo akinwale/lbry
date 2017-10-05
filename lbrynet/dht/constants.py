@@ -24,6 +24,9 @@ k = 8
 #: Timeout for network operations (in seconds)
 rpcTimeout = 5
 
+# number of rpc attempts to make before a timeout results in the node being removed as a contact
+rpcAttempts = 5
+
 # Delay between iterations of iterative node lookups (for loose parallelism)  (in seconds)
 iterativeLookupDelay = rpcTimeout / 2
 

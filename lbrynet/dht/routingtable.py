@@ -337,7 +337,7 @@ class OptimizedTreeRoutingTable(TreeRoutingTable):
         except ValueError:
             return
         contact.failedRPCs += 1
-        if contact.failedRPCs >= 5:
+        if contact.failedRPCs >= constants.rpcAttempts:
             self._buckets[bucketIndex].removeContact(contactID)
             # Replace this stale contact with one from our replacement cache, if we have any
             if bucketIndex in self._replacementCache:
